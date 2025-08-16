@@ -49,6 +49,13 @@ async fn test_llm(
     }
 }
 
+// シンプルなメッセージ処理コマンド
+#[tauri::command]
+fn process_message(message: String) -> String {
+    // とりあえずエコーバック（受け取ったメッセージに「応答: 」を付けて返す）
+    format!("応答: {}", message)
+}
+
 fn main() {
     // アプリケーション状態の初期化
     let app_state = AppState {
@@ -57,7 +64,7 @@ fn main() {
 
     tauri::Builder::default()
         .manage(app_state) // 状態を管理
-        .invoke_handler(tauri::generate_handler![greet, test_llm]) // test_llmを追加
+        .invoke_handler(tauri::generate_handler![greet, test_llm, process_message]) // test_llmを追加
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
