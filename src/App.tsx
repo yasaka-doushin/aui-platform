@@ -1,10 +1,12 @@
-// src/App.tsx - Tauri v2対応版
-// import { useState } from "react";
-// Tauri v2のインポート方法
-// import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core"; // Tauri v2のインポート方法
+
+import { Avatar } from "./components/Avatar";
 import { ChatWindow } from "./components/Chat/ChatWindow";
-import { useChatStore } from "./stores/ChatStore";
+// import { useChatStore } from "./stores/ChatStore";
+import { EmotionType } from "./components/Avatar/emotions";
+
+import "./App.css";
 
 // interface LLMResponse {
 //   text: string;
@@ -13,21 +15,28 @@ import { useChatStore } from "./stores/ChatStore";
 // }
 
 function App() {
-  // 開発時のみ：Zustandの状態をコンソールで確認できるようにする
-  if (import.meta.env.DEV) {
-    (window as any).chatStore = useChatStore;
-  }
+  const [greetMsg, setGreetMsg] = useState("");
+  const [name, setName] = useState("");
+  const [currentEmotion, setCurrentEmotion] = useState<EmotionType>("neutral");
 
-  // const [greetMsg, setGreetMsg] = useState("");
-  // const [name, setName] = useState("");
   // const [llmPrompt, setLlmPrompt] = useState("");
   // const [llmResponse, setLlmResponse] = useState<LLMResponse | null>(null);
   // const [isLoading, setIsLoading] = useState(false);
 
-  // async function greet() {
-  //   // Tauri v2でもinvokeの使い方は同じ
-  //   setGreetMsg(await invoke("greet", { name }));
-  // }
+  async function greet() {
+    setGreetMsg(await invoke("greet", { name }));
+  }
+
+  const emotions: EmotionType[] = [
+    "neutral",
+    "happy",
+    "sad",
+    "angry",
+    "surprised",
+    "thinking",
+    "confused",
+    "excited",
+  ];
 
   // async function testLLM() {
   //   if (!llmPrompt.trim()) {
@@ -69,23 +78,67 @@ function App() {
   // };
 
   return (
-    // <div className="container">
-    //   <h1>🤖 AUI Platform - MVP (Tauri v2)</h1>
+    <div className="container">
+      <h1> AUI Platform - Avatar Test</h1>
 
-    //   {/* 既存のGreet部分 */}
-    //   <div className="row">
-    //     <div>
-    //       <input
-    //         id="greet-input"
-    //         onChange={(e) => setName(e.currentTarget.value)}
-    //         placeholder="Enter a name..."
-    //       />
-    //       <button type="button" onClick={() => greet()}>
-    //         Greet
-    //       </button>
-    //     </div>
-    //     <p>{greetMsg}</p>
-    //   </div>
+      {/* アバター表示　*/}
+      <div style={{ margin: "20px 0 " }}>
+        <Avatar emotion={currentEmotion} />
+        <p style={{ textAlign: "center", marginTop: "10px" }}>
+          Current emotion: <strong>{currentEmotion}</strong>
+        </p>
+      </div>
+
+      {/* 感情切り替えボタン */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "10px",
+          justifyContent: "center",
+          margin: "20px 0",
+        }}
+      >
+        {emotions.map((emotion) => (
+          <button
+            key={emotion}
+            onClick={() => setCurrentEmotion(emotion)}
+            style={{
+              padding: "8px 16px",
+              backgroundColor:
+                currentEmotion === emotion ? "#0074D9" : "#f0f0f0",
+              color: currentEmotion === emotion ? "white" : "black",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            {emotion}
+          </button>
+        ))}
+      </div>
+
+      <div className="row">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            greet();
+          }}
+        >
+          <input
+            id="greet-input"
+            onChange={(e) => setName(e.currentTarget.value)}
+            placeholder="Enter a name..."
+          />
+          <button type="submit">Greet</button>
+        </form>
+      </div>
+      <p>{greetMsg}</p>
+
+      <div className="container">
+        <ChatWindow />
+      </div>
+    </div>
 
     //   {/* LLMテスト部分 */}
     //   <div className="row" style={{ marginTop: "30px" }}>
@@ -159,10 +212,6 @@ function App() {
     //     </div>
     //   </div>
     // </div>
-
-    <div className="container">
-      <ChatWindow />
-    </div>
   );
 }
 

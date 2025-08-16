@@ -1,0 +1,64 @@
+.avatar-wrapper {
+  display: inline-block;
+  position: relative;
+}
+
+.avatar-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+  /* v12のアニメーション最適化のためGPU使用 */
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.avatar-svg {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* v12のパフォーマンス最適化 */
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.avatar-svg:hover {
+  transform: scale(1.05);
+}
+
+/* 感情パーティクル（v12最適化） */
+.emotion-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  /* レイヤー最適化 */
+  z-index: 10;
+  transform: translateZ(0);
+}
+
+.particle {
+  position: absolute;
+  /* v12アニメーション最適化 */
+  will-change: transform, opacity;
+  contain: layout style paint;
+}
+
+.particle.sparkle {
+  filter: brightness(1.2);
+}
+
+.particle.bubble {
+  opacity: 0.8;
+}
+
+/* パフォーマンス向上のための設定 */
+@media (prefers-reduced-motion: reduce) {
+  .avatar-svg,
+  .particle {
+    animation: none !important;
+    transition: none !important;
+  }
+}
