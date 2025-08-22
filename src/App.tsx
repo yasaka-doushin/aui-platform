@@ -3,8 +3,12 @@ import { invoke } from "@tauri-apps/api/core"; // Tauri v2のインポート方�
 
 import { Avatar } from "./components/Avatar";
 import { ChatWindow } from "./components/Chat/ChatWindow";
-// import { useChatStore } from "./stores/ChatStore";
+import { Settings } from "./components/Settings";
 import { EmotionType } from "./components/Avatar/emotions";
+import { ErrorNotification } from "./components/ErrorNotification";
+import { PerformanceMonitor } from "./components/PerformanceMonitor";
+// import { useChatStore } from "./stores/ChatStore";
+import { safeInvoke, AppError } from "./utils/errorHandler";
 
 import "./App.css";
 
@@ -18,6 +22,8 @@ function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType>("neutral");
+  const [error, setError] = useState<AppError | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   // const [llmPrompt, setLlmPrompt] = useState("");
   // const [llmResponse, setLlmResponse] = useState<LLMResponse | null>(null);
@@ -77,66 +83,111 @@ function App() {
   //   return emojis[emotion] || "🤖";
   // };
 
+  const testError = async (shouldFail: boolean) => {
+    const result = await safeInvoke<string>("test_error_handling", {
+      shouldFail,
+    });
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      console.log("成功:", result.data);
+    }
+  };
+
   return (
-    <div className="container">
-      <h1> AUI Platform - Avatar Test</h1>
+    <div>
+      {/* エラー通知 */}
+      <ErrorNotification error={error} onClose={() => setError(null)} />
 
-      {/* アバター表示　*/}
-      <div style={{ margin: "20px 0 " }}>
-        <Avatar emotion={currentEmotion} />
-        <p style={{ textAlign: "center", marginTop: "10px" }}>
-          Current emotion: <strong>{currentEmotion}</strong>
-        </p>
-      </div>
-
-      {/* 感情切り替えボタン */}
-      <div
+      {/* 設定ボタン追加 */}
+      <button
+        onClick={() => setShowSettings(true)}
         style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "10px",
-          justifyContent: "center",
-          margin: "20px 0",
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          padding: "8px 16px",
         }}
       >
-        {emotions.map((emotion) => (
-          <button
-            key={emotion}
-            onClick={() => setCurrentEmotion(emotion)}
-            style={{
-              padding: "8px 16px",
-              backgroundColor:
-                currentEmotion === emotion ? "#0074D9" : "#f0f0f0",
-              color: currentEmotion === emotion ? "white" : "black",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            {emotion}
-          </button>
-        ))}
-      </div>
+        ⚙️ 設定
+      </button>
 
-      <div className="row">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            greet();
-          }}
-        >
-          <input
-            id="greet-input"
-            onChange={(e) => setName(e.currentTarget.value)}
-            placeholder="Enter a name..."
-          />
-          <button type="submit">Greet</button>
-        </form>
-      </div>
-      <p>{greetMsg}</p>
+      {/* 設定画面 */}
+      <Settings isOpen={showSettings} onClose={() => setShowSettings(false)} />
 
       <div className="container">
+        <h1> AUI Platform - Avatar Test</h1>
+
+        {/* アバター表示　*/}
+        <div style={{ margin: "20px 0 " }}>
+          <Avatar emotion={currentEmotion} />
+          <p style={{ textAlign: "center", marginTop: "10px" }}>
+            Current emotion: <strong>{currentEmotion}</strong>
+          </p>
+        </div>
+
+        {/* 感情切り替えボタン */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "10px",
+            justifyContent: "center",
+            margin: "20px 0",
+          }}
+        >
+          {emotions.map((emotion) => (
+            <button
+              key={emotion}
+              onClick={() => setCurrentEmotion(emotion)}
+              style={{
+                padding: "8px 16px",
+                backgroundColor:
+                  currentEmotion === emotion ? "#0074D9" : "#f0f0f0",
+                color: currentEmotion === emotion ? "white" : "black",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              {emotion}
+            </button>
+          ))}
+        </div>
+
+        <div className="row">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              greet();
+            }}
+          >
+            <input
+              id="greet-input"
+              onChange={(e) => setName(e.currentTarget.value)}
+              placeholder="Enter a name..."
+            />
+            <button type="submit">Greet</button>
+          </form>
+        </div>
+        <p>{greetMsg}</p>
+
         <ChatWindow />
+
+        <PerformanceMonitor />
+
+        {/* エラーハンドリングテスト */}
+        <div style={{ marginTop: "20px" }}>
+          <h3>エラーハンドリングテスト</h3>
+          <button onClick={() => testError(false)}>成功パターン</button>
+          <button
+            onClick={() => testError(true)}
+            style={{ marginLeft: "10px" }}
+          >
+            エラーパターン
+          </button>
+        </div>
       </div>
     </div>
 

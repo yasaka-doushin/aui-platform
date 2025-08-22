@@ -5,10 +5,14 @@ mod bridge;
 // モジュールの宣言
 mod ai;
 mod commands;
+mod error;
+mod optimizer;
 mod utils;
 
 use ai::SimpleLLM;
 use bridge::ApplicationBridge;
+use error::{AppError, AppResult};
+use optimizer::PerformanceMonitor;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 
@@ -78,6 +82,23 @@ async fn get_app_context(
     bridge.get_app_context().await.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn test_error_handling(should_fail: bool) -> AppResult<String> {
+    if should_fail {
+        Err(AppError::new("TEST_ERROR", "これはテストエラーです。"))
+    } else {
+        Ok("成功しました！".to_string())
+    }
+}
+
+// システム情報取得コマンド
+#[tauri::command]
+async fn get_system_info(
+    monitor: tauri::State<'_, Arc<PerformanceMonitor>>,
+) -> Result<optimizer::SystemInfo, String> {
+    monitor.get_system_info().await.map_err(|e| e.to_string())
+}
+
 fn main() {
     // アプリケーション状態の初期化
     let app_state = AppState {
@@ -86,15 +107,21 @@ fn main() {
 
     let app_bridge = Arc::new(RwLock::new(ApplicationBridge::new()));
 
+    // パフォーマンスモニター初期化
+    let monitor = Arc::new(PerformanceMonitor::new());
+
     tauri::Builder::default()
         .manage(app_state) // 状態を管理
         .manage(app_bridge)
+        .manage(monitor)
         .invoke_handler(tauri::generate_handler![
             greet,
             test_llm,
             process_message,
             test_bridge,
             get_app_context,
+            test_error_handling,
+            get_system_info,
         ]) // test_llmを追加
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
